@@ -9,6 +9,7 @@ import com.vis.crm.usertype.UserTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
 public class UserServiceCRMImpl implements UserServiceCRM {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder encoder;
 
     @Autowired
     private EntityStatusRepository entityStatusRepository;
@@ -49,6 +53,10 @@ public class UserServiceCRMImpl implements UserServiceCRM {
     @Override
     public UserResponseDTO createUser(UserRequestDTO  userRequestDTO) {
         UserDetails userCRMDetails = convertDTOToUserDetails(userRequestDTO);
+
+        String encPassword = userCRMDetails.getPassword() != null && !userCRMDetails.getPassword().trim().isEmpty() ? encoder.encode(userCRMDetails.getPassword()) : null;
+        userCRMDetails.setPassword(encPassword);
+
         UserDetails savedUser = userRepository.save(userCRMDetails);
         UserResponseDTO userResponseDTO = convertToUserResponseDTO(savedUser);
         return userResponseDTO;
@@ -67,7 +75,10 @@ public class UserServiceCRMImpl implements UserServiceCRM {
         existingUserCRM.setLastName(userCRMDetails.getLastName());
         existingUserCRM.setTitle(userCRMDetails.getTitle());
         existingUserCRM.setUsername(userCRMDetails.getUsername());
-        existingUserCRM.setPassword(userCRMDetails.getPassword());
+
+        String encPassword = userCRMDetails.getPassword() != null && !userCRMDetails.getPassword().trim().isEmpty() ? encoder.encode(userCRMDetails.getPassword()) : null;
+        existingUserCRM.setPassword(encPassword);
+
         existingUserCRM.setPhoneNumber(userCRMDetails.getPhoneNumber());
         existingUserCRM.setEmailId(userCRMDetails.getEmailId());
 
@@ -127,7 +138,8 @@ public class UserServiceCRMImpl implements UserServiceCRM {
                     existingUserCRM.setUsername((String) value);
                     break;
                 case "password":
-                    existingUserCRM.setPassword((String) value);
+                    String encPassword = value != null && value != "" ? encoder.encode((String)value) : null;
+                    existingUserCRM.setPassword(encPassword);
                     break;
                 case "phoneNumber":
                     existingUserCRM.setPhoneNumber((String) value);
